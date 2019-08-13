@@ -1,3 +1,4 @@
 .idea/
-creds/*
-!creds/.gitkeep
+credentials/*
+!credentials/.gitkeep
+__pycache__/
