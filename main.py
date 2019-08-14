@@ -1,11 +1,15 @@
+#!/usr/local/bin/python3.7
+
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 
 import atexit
 import json
 import os
+import random
 
-import googleapi
+from googleapi import get_sheet
+
 
 def make_chrome_browser(path_to, run_headless=False, quit_on_done=False):
     if run_headless:
@@ -36,6 +40,7 @@ def twitter_login(driver_instance, username, password):
 
     driver_instance.find_element_by_class_name("EdgeButtom--medium").click()
 
+
 def make_poll_tweet(driver_instance, title, options):
     if len(options) < 2:
         print("Polls must have at least 2 options!")
@@ -60,10 +65,38 @@ def make_poll_tweet(driver_instance, title, options):
         tweet_button = driver_instance.find_element_by_xpath("//div[@data-testid='tweetButton']")
         tweet_button.click()
 
-if __name__ == '__main__':
-    driver = make_chrome_browser(path_to="/Users/zackamiton/Resources/chromedriver", run_headless=True)
+def get_poll_option():
+    poll_choices = get_sheet("1zicwDHlBF5qxqR1OedHjd59-Ul9NagCPnlHkiIkrHl0", "A2:E2000").get('values')
 
-    twitter_creds = get_account("twitter")
-    twitter_login(driver, twitter_creds['username'], twitter_creds['password'])
-    make_poll_tweet(driver, "which of these greetings best defines you", ["hey", "hi", "howdy", "heyo"])
-    pass
+    with open(os.path.join(os.path.dirname(__file__), "log.txt"), "r+") as lf:
+        chosen_options = [int(line.strip()) for line in lf.readlines()]
+
+    total_options = [n for n in range(0, len(poll_choices))]
+    remaining_options = list(set(total_options) - set(chosen_options))
+    filtered_poll = None
+
+    if len(remaining_options) == 0:
+        print("No remaining polls!")
+    else:
+        passed = False
+        while not passed:
+            choice = random.choice(remaining_options)
+            filtered_poll = list(filter(None, poll_choices[choice]))
+            if len(filtered_poll) < 3:
+                remaining_options.remove(choice)
+            else:
+                passed = True
+                with open(os.path.join(os.path.dirname(__file__), "log.txt"), "a+") as lf:
+                    lf.write(str(choice) + "\n")
+
+    return filtered_poll
+
+if __name__ == '__main__':
+    poll = get_poll_option()
+    if poll is not None:
+        driver = make_chrome_browser(path_to="/Users/zackamiton/Resources/chromedriver", run_headless=True)
+
+        twitter_creds = get_account("twitter")
+        twitter_login(driver, twitter_creds['username'], twitter_creds['password'])
+
+        make_poll_tweet(driver, poll[0], poll[1:])

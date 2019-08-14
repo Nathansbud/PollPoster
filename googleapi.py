@@ -48,7 +48,7 @@ def write_sheet(sheet, values, r='', mode="ROWS"):
     sheets_token = make_token(scope=SCOPES, cred_name="sheets")
     service = build('sheets', 'v4', credentials=sheets_token)
 
-    result = service.spreadsheets().values().update(spreadsheetId=sheet, range=r, valueInputOption="RAW", body={'values':values}).execute()
+    return service.spreadsheets().values().update(spreadsheetId=sheet, range=r, valueInputOption="RAW", body={'values':values}).execute()
 
 
 if __name__ == '__main__':
